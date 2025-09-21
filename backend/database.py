@@ -6,26 +6,13 @@ from sqlalchemy.orm import sessionmaker
 DATABASE_URL = "sqlite:///./library.db"
 
 # Create SQLAlchemy engine
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+engine = create_engine(
+    DATABASE_URL, 
+    connect_args={"check_same_thread": False}
+)
 
 # Create a SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Create a Base class for declarative models
-Base = declarative_base()
-
-# Book model for database
-class BookModel(Base):
-    __tablename__ = "books"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, index=True)
-    author = Column(String)
-    isbn = Column(String, unique=True, index=True)
-    quantity = Column(Integer, default=0)
-
-# Create tables
-Base.metadata.create_all(bind=engine)
 
 # Dependency to get database session
 def get_db():
@@ -34,3 +21,9 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Import des modèles pour s'assurer qu'ils sont créés
+from models import Base, UserModel, BookModel
+
+# Créer les tables
+Base.metadata.create_all(bind=engine)

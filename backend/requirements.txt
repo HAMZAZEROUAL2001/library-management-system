@@ -3,3 +3,13 @@ uvicorn==0.27.0
 pydantic==2.6.1
 sqlalchemy==2.0.25
 sqlite3
+
+# Dépendances de test
+pytest==7.4.4
+httpx==0.26.0
+requests==2.31.0
+
+# Dépendances d'authentification
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.9
