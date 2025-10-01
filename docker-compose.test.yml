@@ -1,0 +1,105 @@
+# Configuration Docker Compose pour tests avec WSL
+version: '3.8'
+
+services:
+  # Base de données de test
+  test-db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: library_test
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d library_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Backend pour tests
+  backend-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://test_user:test_password@test-db:5432/library_test
+      - SECRET_KEY=test-secret-key-for-testing-only
+      - JWT_SECRET_KEY=test-jwt-secret-key
+      - ENVIRONMENT=test
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8001:8000"
+    depends_on:
+      test-db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - ./backend/tests:/app/tests
+    command: >
+      sh -c "
+        echo 'Attente de la base de données...' &&
+        sleep 5 &&
+        alembic upgrade head &&
+        echo 'Exécution des tests...' &&
+        pytest tests/ -v --cov=. --cov-report=html --cov-report=term-missing
+      "
+
+  # Frontend pour tests
+  frontend-test:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.test
+    environment:
+      - CI=true
+      - REACT_APP_API_URL=http://backend-test:8000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm test -- --coverage --watchAll=false
+
+  # Tests d'intégration
+  integration-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=postgresql://test_user:test_password@test-db:5432/library_test
+      - SECRET_KEY=test-secret-key-for-testing-only
+      - JWT_SECRET_KEY=test-jwt-secret-key
+      - ENVIRONMENT=test
+      - API_BASE_URL=http://backend-test:8000
+    depends_on:
+      - backend-test
+      - test-db
+    volumes:
+      - ./backend/tests:/app/tests
+    command: >
+      sh -c "
+        echo 'Attente du backend...' &&
+        sleep 10 &&
+        python tests/test_integration.py
+      "
+
+  # Tests de charge
+  load-test:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - API_BASE_URL=http://backend-test:8000
+    depends_on:
+      - backend-test
+    volumes:
+      - ./backend/tests:/app/tests
+    command: >
+      sh -c "
+        echo 'Attente du backend...' &&
+        sleep 15 &&
+        python tests/test_load.py
+      "
+
+volumes:
+  test_db_data:

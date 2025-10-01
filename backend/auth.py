@@ -5,7 +5,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import hashlib
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -17,19 +17,21 @@ SECRET_KEY = os.getenv("SECRET_KEY", "votre-clé-secrète-temporaire-à-remplace
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Contexte de hachage de mot de passe
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Configuration de hachage SHA256
+def hash_password(password: str) -> str:
+    """Hacher un mot de passe avec SHA256"""
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Schéma OAuth2 pour l'authentification
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Vérifier un mot de passe en clair contre un hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    return hash_password(plain_password) == hashed_password
 
 def get_password_hash(password: str) -> str:
     """Hacher un mot de passe"""
-    return pwd_context.hash(password)
+    return hash_password(password)
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Créer un token d'accès JWT"""

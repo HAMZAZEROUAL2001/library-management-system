@@ -1,15 +1,16 @@
-from sqlalchemy import create_engine, Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+import os
 
-# SQLite database URL
-DATABASE_URL = "sqlite:///./library.db"
+# PostgreSQL database URL
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", 
+    "postgresql://library_user:library_pass@localhost:5432/library_management"
+)
 
 # Create SQLAlchemy engine
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"check_same_thread": False}
-)
+engine = create_engine(DATABASE_URL)
 
 # Create a SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -23,7 +24,7 @@ def get_db():
         db.close()
 
 # Import des modèles pour s'assurer qu'ils sont créés
-from models import Base, UserModel, BookModel
+from models import Base, UserModel, BookModel, LoanModel
 
 # Créer les tables
 Base.metadata.create_all(bind=engine)

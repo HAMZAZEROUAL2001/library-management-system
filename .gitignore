@@ -64,3 +64,30 @@ venv.bak/
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and temporary files
+*.tmp
+temp/
+logs/
+
+# Secrets and credentials
+secrets.yml
+credentials.json
+.env.production
+.env.staging
+
+# Generated documentation
+docs/Architecture_Systeme_Bibliotheque.html
